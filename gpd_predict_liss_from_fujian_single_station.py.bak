@@ -1,6 +1,5 @@
 # -*- coding: <utf-8> -*-
 #!/usr/bin/env python
-##################################################################
 # Automatic picking of seismic waves using Generalized Phase Detection
 # See http://scedc.caltech.edu/research-tools/deeplearning.html for more info
 #
@@ -13,7 +12,7 @@
 # 2.Ming Zhao (mzhao@cea-igp.ac.cn) modified and applied it to P,S phase picking from continious waveform,real-time stream shared by redis,etc. 
 #Usage:
 #./gpd_predict_liss_from_fujian_single_station.py --V true --para_path scedc_model --plot true --receive_interval 30  --output_path gpd_model_predicts --save_mseed true
-##################################################################
+#################################################################
 
 import string
 import time
@@ -23,12 +22,18 @@ import os
 from datetime import datetime
 import numpy as np
 import obspy.core as oc
+import tf.keras
 from obspy.core.utcdatetime import UTCDateTime
 import pandas as pd
-import tensorflow as tf
+from tf.keras.models import Sequential
+from tf.keras.layers import Dense, Dropout, Activation, Flatten
+from tf.keras.layers import Conv1D, MaxPooling1D
+from tf.keras import losses
+from tf.keras.models import model_from_json
 from rediss import redis2app as rediss
-#from liss import liss
+from liss import liss
 from obspy.signal.trigger import trigger_onset
+import tensorflow as tf
 import matplotlib as mpl
 import json
 mpl.use('Agg')
@@ -150,7 +155,7 @@ def main(_):
     if not os.path.exists(FLAGS.output_path):
         os.makedirs(FLAGS.output_path)
     # Reading in liss stream
-    wave = rediss.waveform('xx.xx.xxx.xxx') #should input your sever ip here
+    wave = rediss.waveform('ip of the server')
     bufferLength = wave.GetBufferLen()
     bufferLength = 60
     wave.ReadStnPara()
@@ -162,7 +167,7 @@ def main(_):
     json_file_psn = open(json_model_psn, 'r')
     loaded_psn_model_json = json_file_psn.read()
     json_file_psn.close()
-    model_psn = tf.keras.models.model_from_json(loaded_psn_model_json, custom_objects={'tf': tf})
+    model_psn = model_from_json(loaded_psn_model_json, custom_objects={'tf': tf})
     print ("model_psn:",model_psn)
 
     # load weights into new model
@@ -176,7 +181,8 @@ def main(_):
 
     #writer = DataWriter(output_path)
     if n_gpu > 1:
-        model_psn = tf.keras.utils.multi_gpu_model(model_psn, gpus=n_gpu)
+        from tf.keras.utils import multi_gpu_model
+        model_psn = multi_gpu_model(model_psn, gpus=n_gpu)
     p_picks_catalog = os.path.join(FLAGS.output_path, 'p_picks_by_CNN.csv')
     s_picks_catalog = os.path.join(FLAGS.output_path, 's_picks_by_CNN.csv')
     data_transfer_error = os.path.join(FLAGS.output_path, 'data_transfer_error_log.csv')

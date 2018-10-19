@@ -3,7 +3,7 @@
 """
 Created on Sun May  6 08:33:42 2018
 
-@author: liao
+@author: liaosirong
 """
 import sys
 from obspy.core import read
@@ -24,7 +24,6 @@ import subprocess
 from datetime import datetime
 
 sys.path.append('/Users/liao/Reaps/ReapsPy/AirGunDataPro')
-
 
 class waveform():
     """
